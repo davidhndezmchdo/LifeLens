@@ -1,6 +1,9 @@
 package com.lifelens.ui.screen
 
-import androidx.compose.foundation.ExperimentalFoundationApi
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,8 +23,13 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.lifelens.data.PhotoEntity
@@ -44,26 +53,60 @@ import com.lifelens.ui.PhotoViewModel
 @Composable
 fun GalleryScreen(viewModel: PhotoViewModel) {
     val photos by viewModel.photos.collectAsState()
+    val context = LocalContext.current
     var selectedPhoto by remember { mutableStateOf<PhotoEntity?>(null) }
+    var pendingImportUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
 
-    if (photos.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                text = "No photos yet. Use the Camera tab to take some!",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(32.dp),
-            )
-        }
-    } else {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            contentPadding = PaddingValues(2.dp),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(photos, key = { it.id }) { photo ->
-                PhotoGridItem(photo = photo, onTap = { selectedPhoto = photo })
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia(),
+    ) { uris ->
+        if (uris.isNotEmpty()) pendingImportUris = uris
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (photos.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = "No photos yet.\nUse the Camera tab or import from your gallery.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(32.dp),
+                )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                contentPadding = PaddingValues(start = 2.dp, end = 2.dp, top = 2.dp, bottom = 80.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                items(photos, key = { it.id }) { photo ->
+                    PhotoGridItem(photo = photo, onTap = { selectedPhoto = photo })
+                }
             }
         }
+
+        FloatingActionButton(
+            onClick = {
+                importLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                )
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Import photos")
+        }
+    }
+
+    if (pendingImportUris.isNotEmpty()) {
+        ImportLabelDialog(
+            count = pendingImportUris.size,
+            onImport = { label ->
+                viewModel.importPhotos(context, pendingImportUris, label)
+                pendingImportUris = emptyList()
+            },
+            onDismiss = { pendingImportUris = emptyList() },
+        )
     }
 
     selectedPhoto?.let { photo ->
@@ -111,6 +154,48 @@ private fun PhotoGridItem(photo: PhotoEntity, onTap: () -> Unit) {
             }
         }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ImportLabelDialog(
+    count: Int,
+    onImport: (String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selectedLabel by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Import $count ${if (count == 1) "photo" else "photos"}") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    text = "Apply a label to all imported photos, or leave blank and label them individually from the gallery.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ACTIVITY_LABELS.forEach { label ->
+                        FilterChip(
+                            selected = selectedLabel == label,
+                            onClick = { selectedLabel = if (selectedLabel == label) null else label },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onImport(selectedLabel) }) {
+                Text(if (selectedLabel != null) "Import as $selectedLabel" else "Import")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
