@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.uv/
+
+# ML artifacts
+mlruns/
+mlartifacts/
+*.ckpt
+*.pt
+*.pth
+*.onnx
+lightning_logs/
+
+# DVC
+.dvc/cache/
+.dvc/tmp/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Android
+android-app/.gradle/
+android-app/local.properties
+android-app/app/build/
+android-app/build/
+*.apk
+*.aab
+*.keystore
+
+# macOS
+.DS_Store
+**/.DS_Store

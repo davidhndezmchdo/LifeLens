@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer lens ring -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,22 C36.327,22 22,36.327 22,54 C22,71.673 36.327,86 54,86 C71.673,86 86,71.673 86,54 C86,36.327 71.673,22 54,22 Z M54,78 C40.745,78 30,67.255 30,54 C30,40.745 40.745,30 54,30 C67.255,30 78,40.745 78,54 C78,67.255 67.255,78 54,78 Z" />
+    <!-- Inner lens -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,40 C46.268,40 40,46.268 40,54 C40,61.732 46.268,68 54,68 C61.732,68 68,61.732 68,54 C68,46.268 61.732,40 54,40 Z" />
+</vector>
